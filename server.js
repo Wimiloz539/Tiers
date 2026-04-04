@@ -50,12 +50,22 @@ app.get("/players", (req, res) => {
     res.json(db.players)
 })
 
+const ADMIN_PASSWORD = "WZ21TIERS539"; // <--- Poné tu clave acá
+
+// Ejemplo para la ruta POST (hacé lo mismo con PUT y DELETE)
 app.post("/player", (req, res) => {
-    let db = loadDB()
-    db.players.push(req.body)
-    saveDB(db)
-    res.json({status: "ok"})
-})
+    const key = req.headers['admin-key'];
+    if (key !== ADMIN_PASSWORD) {
+        return res.status(403).json({ error: "Acceso denegado" });
+    }
+    
+    let db = loadDB();
+    db.players.push(req.body);
+    saveDB(db);
+    res.json({ status: "ok" });
+});
+
+// REPETÍ ESE "IF" EN app.put Y app.delete
 
     let db = loadDB();
     db.players.push(req.body);
@@ -63,23 +73,35 @@ app.post("/player", (req, res) => {
     res.json({ status: "ok" });
 });
 
-app.put("/player/:name", (req, res) => {
-    let db = loadDB()
-    let p = db.players.find(x => x.name === req.params.name)
-    if(!p){
-        return res.status(404).json({error: "Jugador no encontrado"})
-    }
-    Object.assign(p, req.body)
-    saveDB(db)
-    res.json({status: "updated"})
-})
+const ADMIN_PASSWORD = "WZ21TIERS539"; // <--- Poné tu clave acá
 
-app.delete("/player/:name", (req, res) => {
-    let db = loadDB()
-    db.players = db.players.filter(p => p.name !== req.params.name)
-    saveDB(db)
-    res.json({status: "deleted"})
-})
+// Ejemplo para la ruta POST (hacé lo mismo con PUT y DELETE)
+app.post("/player", (req, res) => {
+    const key = req.headers['admin-key'];
+    if (key !== ADMIN_PASSWORD) {
+        return res.status(403).json({ error: "Acceso denegado" });
+    }
+    
+    let db = loadDB();
+    db.players.push(req.body);
+    saveDB(db);
+    res.json({ status: "ok" });
+});
+
+const ADMIN_PASSWORD = "WZ21TIERS539"; // <--- Poné tu clave acá
+
+// Ejemplo para la ruta POST (hacé lo mismo con PUT y DELETE)
+app.post("/player", (req, res) => {
+    const key = req.headers['admin-key'];
+    if (key !== ADMIN_PASSWORD) {
+        return res.status(403).json({ error: "Acceso denegado" });
+    }
+    
+    let db = loadDB();
+    db.players.push(req.body);
+    saveDB(db);
+    res.json({ status: "ok" });
+});
 
 // --- CONFIGURACIÓN DE PUERTO PARA RENDER ---
 // IMPORTANTE: Solo un app.listen y al final del archivo

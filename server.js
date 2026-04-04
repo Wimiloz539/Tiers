@@ -76,7 +76,7 @@ app.post("/player", (req, res) => {
 const ADMIN_PASSWORD = "WZ21TIERS539"; // <--- Poné tu clave acá
 
 // Ejemplo para la ruta POST (hacé lo mismo con PUT y DELETE)
-app.post("/player", (req, res) => {
+app.put("/player", (req, res) => {
     const key = req.headers['admin-key'];
     if (key !== ADMIN_PASSWORD) {
         return res.status(403).json({ error: "Acceso denegado" });
@@ -91,7 +91,7 @@ app.post("/player", (req, res) => {
 const ADMIN_PASSWORD = "WZ21TIERS539"; // <--- Poné tu clave acá
 
 // Ejemplo para la ruta POST (hacé lo mismo con PUT y DELETE)
-app.post("/player", (req, res) => {
+app.delete("/player", (req, res) => {
     const key = req.headers['admin-key'];
     if (key !== ADMIN_PASSWORD) {
         return res.status(403).json({ error: "Acceso denegado" });

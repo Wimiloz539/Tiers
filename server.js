@@ -50,12 +50,12 @@ app.get("/players", (req, res) => {
     res.json(db.players)
 })
 
-// Ejemplo para la ruta POST (hacé lo mismo con PUT y DELETE)
 app.post("/player", (req, res) => {
-    const adminKey = req.headers['admin-key'];
-    if (adminKey !== "WZ21TIERS539") { // Elegí una clave acá
-        return res.status(403).json({ error: "No tenés permiso" });
-    }
+    let db = loadDB()
+    db.players.push(req.body)
+    saveDB(db)
+    res.json({status: "ok"})
+})
 
     let db = loadDB();
     db.players.push(req.body);

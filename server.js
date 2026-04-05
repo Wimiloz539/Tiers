@@ -1,24 +1,35 @@
+require('dotenv').config();
 const express = require("express");
-const fs = require("fs");
 const cors = require("cors");
+const mongoose = require("mongoose"); // Cambiamos fs por mongoose
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-const DB_FILE = "./database.json";
 const ADMIN_PASSWORD = "WZ21TIERS539";
 
-// Cargar DB
-function loadDB() {
-    if (!fs.existsSync(DB_FILE)) return { players: [] };
-    return JSON.parse(fs.readFileSync(DB_FILE));
-}
+// --- CONEXIÓN A MONGO ---
+// Render usará la variable MONGO_URI que configuramos en su panel
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log("✅ Conectado a MongoDB Atlas"))
+    .catch(err => console.error("❌ Error de conexión:", err));
 
-// Guardar DB
-function saveDB(data) {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-}
+// --- MODELO DE DATOS ---
+const playerSchema = new mongoose.Schema({
+    name: { type: String, unique: true },
+    region: String,
+    sword: { type: String, default: "None" },
+    axe: { type: String, default: "None" },
+    crystal: { type: String, default: "None" },
+    uhc: { type: String, default: "None" },
+    smp: { type: String, default: "None" },
+    nethpot: { type: String, default: "None" },
+    diamondpot: { type: String, default: "None" },
+    mace: { type: String, default: "None" }
+});
+
+const Player = mongoose.model('Player', playerSchema);
 
 const levelPoints = {
     HT1: 60, LT1: 45, HT2: 30, LT2: 20,
@@ -28,66 +39,65 @@ const levelPoints = {
 
 const modes = ["sword", "axe", "crystal", "uhc", "smp", "nethpot", "diamondpot", "mace"];
 
-function calcPoints(player) {
+// Función para calcular puntos (ahora la usamos antes de enviar el JSON)
+function getPoints(p) {
     let total = 0;
     modes.forEach(m => {
-        total += levelPoints[player[m]] || 0;
+        total += levelPoints[p[m]] || 0;
     });
     return total;
 }
 
 // --- RUTAS ---
 
-// Obtener todos los jugadores
-app.get("/players", (req, res) => {
-    let db = loadDB();
-    db.players.forEach(p => {
-        p.points = calcPoints(p);
-    });
-    db.players.sort((a, b) => (b.points || 0) - (a.points || 0));
-    res.json(db.players);
+// Obtener todos los jugadores (Ordenados por puntos)
+app.get("/players", async (req, res) => {
+    try {
+        let players = await Player.find().lean();
+        players = players.map(p => ({
+            ...p,
+            points: getPoints(p)
+        }));
+        players.sort((a, b) => b.points - a.points);
+        res.json(players);
+    } catch (err) {
+        res.status(500).json({ error: "Error al obtener jugadores" });
+    }
 });
 
 // Agregar Jugador
-app.post("/player", (req, res) => {
+app.post("/player", async (req, res) => {
     if (req.headers['admin-key'] !== ADMIN_PASSWORD) {
         return res.status(403).json({ error: "Acceso denegado" });
     }
-    let db = loadDB();
-    db.players.push(req.body);
-    saveDB(db);
-    res.json({ status: "ok" });
+    try {
+        const newPlayer = new Player(req.body);
+        await newPlayer.save();
+        res.json({ status: "ok" });
+    } catch (err) {
+        res.status(400).json({ error: "Error al crear (nombre duplicado?)" });
+    }
 });
 
 // Editar Jugador
-app.put("/player/:name", (req, res) => {
+app.put("/player/:name", async (req, res) => {
     if (req.headers['admin-key'] !== ADMIN_PASSWORD) {
         return res.status(403).json({ error: "Acceso denegado" });
     }
-    let db = loadDB();
-    const index = db.players.findIndex(p => p.name === req.params.name);
-    if (index !== -1) {
-        db.players[index] = { ...db.players[index], ...req.body };
-        saveDB(db);
-        res.json({ status: "ok" });
-    } else {
-        res.status(404).json({ error: "Jugador no encontrado" });
+    try {
+        const updated = await Player.findOneAndUpdate(
+            { name: req.params.name }, 
+            req.body, 
+            { new: true }
+        );
+        if (updated) res.json({ status: "ok" });
+        else res.status(404).json({ error: "No encontrado" });
+    } catch (err) {
+        res.status(500).json({ error: "Error al editar" });
     }
 });
 
 // Eliminar Jugador
-app.delete("/player/:name", (req, res) => {
+app.delete("/player/:name", async (req, res) => {
     if (req.headers['admin-key'] !== ADMIN_PASSWORD) {
-        return res.status(403).json({ error: "Acceso denegado" });
-    }
-    let db = loadDB();
-    db.players = db.players.filter(p => p.name !== req.params.name);
-    saveDB(db);
-    res.json({ status: "ok" });
-});
-
-// Puerto para Render
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Servidor corriendo en el puerto ${PORT}`);
-});
+        return res.status(403).json({

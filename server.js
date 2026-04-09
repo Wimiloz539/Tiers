@@ -100,4 +100,18 @@ app.put("/player/:name", async (req, res) => {
 // Eliminar Jugador
 app.delete("/player/:name", async (req, res) => {
     if (req.headers['admin-key'] !== ADMIN_PASSWORD) {
-        return res.status(403).json({
+        return res.status(403).json({ error: "Acceso denegado" });
+    }
+    try {
+        await Player.findOneAndDelete({ name: req.params.name });
+        res.json({ status: "ok" });
+    } catch (err) {
+        res.status(500).json({ error: "Error al eliminar" });
+    }
+});
+
+// Puerto para Render
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Servidor en línea en el puerto ${PORT}`);
+});
